@@ -24,6 +24,10 @@ class hmix():
         self.elementTRAN = {}
         self.Avogardro = 6.02E23 # unit /mole
         self.xA = np.linspace(0.001,0.999,200)
+        self.xAs = np.empty(len(self.xA))
+        self.fxs = np.empty(len(self.xA))
+        self.g = np.empty(len(self.xA))
+        self.deHmix = np.empty(len(self.xA))
         self.xB = 1.0 - self.xA        
         self.__printHead()        
         self.__readDatabase()
@@ -90,10 +94,14 @@ class hmix():
         self.B_Vm23 = float(self.elementVM23[self.B_name])
         dePhi = self.A_phiStar-self.B_phiStar
         deNws13 = self.A_nws13-self.B_nws13
-        self.xAs = self.xA*self.A_Vm23/(self.xA*self.A_Vm23+self.xB*self.B_Vm23)
-        self.fxs = self.xAs*(1.0-self.xAs)
-        self.g = 2.0*(self.xA*self.A_Vm23+self.xB*self.B_Vm23)/(1.0/self.A_nws13+1.0/self.B_nws13)
-        self.deHmix = self.Avogardro*self.fxs*self.g*self.P*(-self.e*(dePhi)**2+self.QP*(deNws13)**2-self.RP)*1.60217657E-22
+        for i in range(len(self.xA)):
+            a = 0.00 # in this version, the volume change in alloys is not in consideration
+            self.A_Vm23Alloy = self.A_Vm23*(1+a*self.xB[i]*(dePhi))
+            self.B_Vm23Alloy = self.B_Vm23*(1+a*self.xA[i]*(-1*dePhi))
+            self.xAs[i] = self.xA[i]*self.A_Vm23Alloy/(self.xA[i]*self.A_Vm23Alloy+self.xB[i]*self.B_Vm23Alloy)
+            self.fxs[i] = self.xAs[i]*(1.0-self.xAs[i])
+            self.g[i] = 2.0*(self.xA[i]*self.A_Vm23Alloy+self.xB[i]*self.B_Vm23Alloy)/(1.0/self.A_nws13+1.0/self.B_nws13)
+            self.deHmix[i] = self.Avogardro*self.fxs[i]*self.g[i]*self.P*(-self.e*(dePhi)**2+self.QP*(deNws13)**2-self.RP)*1.60217657E-22
         self.deH_A_partial_infDilute =2.0*self.A_Vm23/(1.0/self.A_nws13+1.0/self.B_nws13)*self.Avogardro*self.P*(-self.e*(dePhi)**2+self.QP*(deNws13)**2-self.RP)*1.60217657E-22
         print 'Calculation done.'
         return
